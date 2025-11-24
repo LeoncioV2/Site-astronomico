@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <!-- Three.js CDN para visualização 3D -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.min.js"></script>
+  <meta charset="UTF-8">
+  <title>Explorador Astronômico Ultra</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #0b1a3c 0%, #1e3a8a 100%);
+      color: #fff;
+      font-family: 'Poppins', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background 0.6s;
+    }
+    body.light {
+      background: linear-gradient(135deg, #e3eafc 0%, #b3c6f7 100%);
+      color: #1e3a8a;
+    }
+    header {
+      background: none;
+      padding: 40px 0 32px 0;
+      text-align: center;
+      box-shadow: none;
+      position: static;
+      z-index: 10;
+      backdrop-filter: none;
+      transition: none;
+    }
+    body.light header {
+      background: none;
+      color: #1e3a8a;
+    }
+    .nasa-btn {
+      font-family: 'Orbitron', 'Poppins', Arial, sans-serif;
+      font-size: 2.2rem;
+      color: #fff;
+      background: linear-gradient(90deg, #0b1a3c 0%, #1e3a8a 60%, #e41c27 100%);
+      border: none;
+      border-radius: 22px;
+      padding: 14px 90px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      min-width: 240px;
+      min-height: 56px;
+      box-shadow: 0 0 32px #1e3a8a, 0 0 64px #e41c27, 0 0 128px #fff2;
+      transition: background 0.3s, box-shadow 0.3s, transform 0.2s;
+      margin-bottom: 32px;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      outline: none;
+    }
+    .nasa-btn .shine {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0;
+      transition: opacity 0.3s, filter 0.3s;
+      filter: blur(0px);
+    }
+    .nasa-btn span {
+      position: relative;
+      z-index: 2;
+      transition: text-shadow 0.4s;
+      font-weight: 700;
+      text-shadow: 0 0 12px #1e3a8a, 0 0 24px #e41c27, 0 0 32px #fff8;
+      letter-spacing: 2.5px;
+    }
+    .nasa-btn:hover {
+      box-shadow: 0 0 64px #1e3a8a, 0 0 128px #e41c27, 0 0 256px #fff5;
+      transform: scale(1.04);
+    }
+    .nasa-btn:hover .shine {
+      opacity: 0.18;
+      filter: blur(12px);
+    }
+    .nasa-btn:hover span {
+      text-shadow: 0 0 32px #fff, 0 0 64px #fff, 0 0 24px #e41c27;
+    }
+    .toggle-mode {
+      position: absolute;
+      top: 24px;
+      right: 32px;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 2rem;
+      cursor: pointer;
+      z-index: 20;
+      transition: color 0.3s;
+    }
+    body.light .toggle-mode { color: #1e3a8a; }
+    .stars {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .rocket {
+      position: fixed;
+      left: 50%;
+      bottom: 0;
+      transform: translateX(-50%);
+      z-index: 5;
+      animation: rocketUp 8s linear infinite;
+      width: 60px;
+      opacity: 0.7;
+    }
+    @keyframes rocketUp {
+      0% { bottom: -80px; opacity: 0.7; }
+      80% { opacity: 1; }
+      100% { bottom: 110vh; opacity: 0; }
+    }
+    .search-bar {
+      display: flex;
+      justify-content: center;
+      margin: 32px 0 40px 0;
+      z-index: 2;
+      position: relative;
+      background: none;
+      box-shadow: none;
+    }
+    .search-bar input {
+      width: 340px;
+      padding: 14px 18px;
+      border-radius: 10px 0 0 10px;
+      border: none;
+      font-size: 1.15rem;
+      outline: none;
+      background: #1e2a4a;
+      color: #fff;
+      box-shadow: 0 2px 12px #0005;
+      transition: background 0.3s, color 0.3s;
+    }
+    body.light .search-bar input {
+      background: #e3eafc;
+      color: #1e3a8a;
+    }
+    .search-bar button {
+      padding: 14px 28px;
+      border-radius: 0 10px 10px 0;
+      border: none;
+      background: #e41c27;
+      color: #fff;
+      font-size: 1.15rem;
+      cursor: pointer;
+      font-family: 'Poppins', Arial, sans-serif;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      transition: background 0.2s;
+      box-shadow: 0 2px 12px #0005;
+    }
+    .search-bar button:hover {
+      background: #ff3b3f;
+    }
+    .facts {
+      max-width: 100vw;
+      margin: 0 auto;
+      padding: 0 2vw 120px 2vw;
+      z-index: 1;
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 40px 0;
+      background: none;
+      box-shadow: none;
+    }
+    .fact {
+      background: rgba(18,34,78,0.72);
+      border-radius: 36px;
+      padding: 44px 36px 44px 36px;
+      box-shadow: 0 0 32px 0 #00fff7cc, 0 12px 64px #000c, 0 0 64px #1e3a8a44;
+      font-size: 1.45rem;
+      line-height: 1.85;
+      position: relative;
+      transition: box-shadow 0.3s, border 0.3s, background 0.5s, transform 0.18s cubic-bezier(.4,2,.6,1), filter 0.3s;
+      border: none;
+      background-clip: padding-box;
+      backdrop-filter: blur(12px) saturate(1.3);
+      display: flex;
+      align-items: center;
+      min-height: 200px;
+      overflow: hidden;
+      width: 100%;
+      max-width: 100%;
+      font-family: 'Orbitron', 'Poppins', Arial, sans-serif;
+      animation: factPopIn 0.7s cubic-bezier(.4,2,.6,1);
+      border-image: linear-gradient(120deg, #00fff7 10%, #e41c27 90%) 1;
+      box-shadow: 0 0 32px 0 #00fff7cc, 0 12px 64px #000c, 0 0 64px #1e3a8a44, 0 0 0 4px #fff1 inset;
+    }
+    .fact::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background: linear-gradient(120deg, #00fff7 0%, #e41c27 100%);
+      opacity: 0.13;
+      pointer-events: none;
+      transition: opacity 0.4s;
+      filter: blur(18px);
+    }
+    .fact:hover {
+      box-shadow: 0 0 64px 8px #00fff7, 0 16px 120px #e41c27cc, 0 0 120px #fff8;
+      border: none;
+      background: rgba(18,34,78,0.92);
+      filter: brightness(1.12) saturate(1.25);
+      transform: scale(1.045) rotate(-0.2deg);
+      z-index: 2;
+    }
+    .fact:hover::before {
+      opacity: 0.22;
+    }
+    @keyframes factPopIn {
+      0% { opacity: 0; transform: scale(0.92) translateY(30px); }
+      100% { opacity: 1; transform: none; }
+    }
+    /* Separador animado entre cards */
+    .fact strong, .fact b {
+      color: #00fff7;
+      text-shadow: 0 0 12px #00fff7cc, 0 0 2px #fff, 0 0 24px #e41c2799;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      font-size: 1.1em;
+      background: linear-gradient(90deg, #00fff7 30%, #e41c27 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .fact i, .fact em {
+      color: #ff3c7e;
+      font-style: italic;
+      filter: drop-shadow(0 0 6px #fff8);
+      font-size: 1.2em;
+    }
+    }
+    .fact.highlight {
+      box-shadow: 0 0 48px #e41c27, 0 0 96px #1e3a8a;
+      border: 2px solid #e41c27;
+      background: linear-gradient(90deg, #e41c27 10%, #1e3a8a 100%);
+      color: #fff;
+      animation: highlight 1.2s;
+    }
+    @keyframes highlight {
+      0% { filter: brightness(1.7); }
+      100% { filter: brightness(1); }
+    }
+    .fact .icon {
+      font-size: 2.7rem;
+      margin-right: 32px;
+      color: #e41c27cc;
+      min-width: 60px;
+      text-align: center;
+      filter: drop-shadow(0 0 16px #fff8) brightness(1.2);
+      flex-shrink: 0;
+      transition: transform 0.3s, filter 0.3s;
+    }
+    .fact:hover .icon {
+      transform: scale(1.18) rotate(-8deg);
+      filter: drop-shadow(0 0 32px #00fff7cc) brightness(1.5);
+    }
+    .fact .img {
+      width: 110px;
+      height: 110px;
+      border-radius: 18px;
+      object-fit: cover;
+      margin-right: 36px;
+      border: 2.5px solid #e41c27cc;
+      box-shadow: 0 0 28px #00fff799, 0 0 18px #1e3a8a88;
+      background: #fff2;
+      flex-shrink: 0;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .fact:hover .img {
+      transform: scale(1.08) rotate(2deg);
+      box-shadow: 0 0 48px #00fff7cc, 0 0 32px #e41c27cc;
+    }
+    .fact strong {
+      color: #e41c27;
+      font-weight: 700;
+    }
+    .footer {
+      text-align: center;
+      color: #fff9;
+      font-size: 1.1rem;
+      padding: 32px 0 16px 0;
+      background: linear-gradient(90deg, #0b1a3c 0%, #1e3a8a 100%);
+      letter-spacing: 1.2px;
+      margin-top: 40px;
+    }
+    @media (max-width: 900px) {
+      .facts {
+        max-width: 99vw;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 24px 12px;
+        padding: 0 4px 40px 4px;
+      }
+      .fact {
+        font-size: 1.05rem;
+        padding: 16px 8px 16px 8px;
+        min-height: 100px;
+      }
+      .fact .icon, .fact .img { font-size: 1.5rem; width: 40px; height: 40px; margin-right: 12px; }
+    }
+    @media (max-width: 600px) {
+      .nasa-btn { font-size: 1.1rem; padding: 8px 18px; }
+      .search-bar input { width: 120px; }
+      .facts {
+        padding: 0 2px 20px 2px;
+        grid-template-columns: 1fr;
+        gap: 12px 0;
+      }
+      .fact {
+        font-size: 0.95rem;
+        padding: 10px 2px 10px 2px;
+        min-height: 60px;
+      }
+      .fact .icon, .fact .img { font-size: 1.1rem; width: 28px; height: 28px; margin-right: 6px; }
+    }
+  </style>
+</head>
+<body>
+    <!-- Container do planeta 3D -->
+    <div id="earth3d-container" style="display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:100;width:480px;height:480px;background:none;"></div>
+  <canvas class="stars"></canvas>
+  <img src="https://cdn-icons-png.flaticon.com/512/3212/3212608.png" class="rocket" alt="Foguete animado" />
+  <header>
+    <button class="toggle-mode" title="Alternar modo claro/escuro" onclick="toggleMode()">
+      <i class="fa-solid fa-moon"></i>
+    </button>
+    <button class="nasa-btn">
+      <div class="shine"></div>
+      <span>explorar universo</span>
+    </button>
+    <h1 style="font-family:'Orbitron',Arial,sans-serif;font-size:2.7rem;margin:0;color:#fff;letter-spacing:3.5px;text-shadow:0 0 24px #1e3a8a,0 0 32px #e41c27;">Explorador Astronômico</h1>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Buscar curiosidade...">
+      <button onclick="searchFact()">Procurar</button>
+    </div>
+  </header>
+  <main class="facts" id="facts">
+    <!-- Fatos serão inseridos aqui pelo JS -->
+  </main>
+  <footer class="footer">
+    &copy; 2025 Explorador Astronômico | Feito com inspiração no universo e na NASA 🚀
+  </footer>
+  <audio id="audio-hover" src="https://cdn.pixabay.com/audio/2022/07/26/audio_124bfae3e2.mp3" preload="auto"></audio>
+  <script>
+        // --- PLANETA TERRA 3D (Three.js) ---
+        const earthContainer = document.getElementById('earth3d-container');
+        let earthScene, earthCamera, earthRenderer, earthMesh, earthAnimId;
+        function showEarth3D() {
+          if (earthContainer.style.display === 'block') return;
+          earthContainer.style.display = 'block';
+          // Inicializa cena
+          earthScene = new THREE.Scene();
+          earthCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+          earthCamera.position.set(0,0,3.2);
+          earthRenderer = new THREE.WebGLRenderer({alpha:true,antialias:true});
+          earthRenderer.setSize(480,480);
+          earthContainer.innerHTML = '';
+          earthContainer.appendChild(earthRenderer.domElement);
+          // Luzes
+          earthScene.add(new THREE.AmbientLight(0xffffff, 0.7));
+          const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+          dirLight.position.set(2,2,4);
+          earthScene.add(dirLight);
+          // Textura realista da Terra
+          const texLoader = new THREE.TextureLoader();
+          const tex = texLoader.load('https://raw.githubusercontent.com/roblabs/earth3d-textures/main/2k_earth_daymap.jpg');
+          const bump = texLoader.load('https://raw.githubusercontent.com/roblabs/earth3d-textures/main/2k_earth_bump.jpg');
+          const spec = texLoader.load('https://raw.githubusercontent.com/roblabs/earth3d-textures/main/2k_earth_specular_map.jpg');
+          const mat = new THREE.MeshPhongMaterial({map:tex,bumpMap:bump,bumpScale:0.08,specularMap:spec,specular:0x333333,shininess:18});
+          const geo = new THREE.SphereGeometry(1, 64, 64);
+          earthMesh = new THREE.Mesh(geo, mat);
+          earthScene.add(earthMesh);
+          // Animação de rotação
+          function animateEarth() {
+            earthMesh.rotation.y += 0.008;
+            earthRenderer.render(earthScene, earthCamera);
+            earthAnimId = requestAnimationFrame(animateEarth);
+          }
+          animateEarth();
+          // Fechar ao clicar fora
+          setTimeout(()=>{
+            document.addEventListener('mousedown', closeEarth3D, {once:true});
+          }, 200);
+        }
+        function closeEarth3D(e) {
+          if (!earthContainer.contains(e.target)) {
+            earthContainer.style.display = 'none';
+            if (earthAnimId) cancelAnimationFrame(earthAnimId);
+            earthContainer.innerHTML = '';
+          } else {
+            document.addEventListener('mousedown', closeEarth3D, {once:true});
+          }
+        }
+        document.querySelector('.nasa-btn').addEventListener('click', function() {
+          if (earthContainer.style.display === 'block') {
+            closeEarth3D({target: document.body});
+          }
+        });
+    // Fundo animado de estrelas com parallax de scroll e efeito de "colagem" ao passar o mouse
+    const canvas = document.querySelector('.stars');
+    const ctx = canvas.getContext('2d');
+    let w, h, stars, mouseX = 0, mouseY = 0, mouseOver = false, scrollY = 0;
+    function resize() {
+      w = window.innerWidth;
+      h = window.innerHeight;
+      canvas.width = w;
+      canvas.height = h;
+      stars = Array.from({length: 180}, () => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: Math.random() * 1.2 + 0.3,
+        o: Math.random() * 0.7 + 0.3,
+        speed: Math.random() * 0.3 + 0.08,
+        px: 0,
+        py: 0
+      }));
+    }
+    function drawStars() {
+      ctx.clearRect(0,0,w,h);
+      // Desenha linhas entre estrelas próximas quando mouse está sobre a tela
+      if (mouseOver) {
+        ctx.save();
+        ctx.globalAlpha = 0.25;
+        ctx.strokeStyle = '#fff';
+        for (let i = 0; i < stars.length; i++) {
+          for (let j = i+1; j < stars.length; j++) {
+            const a = stars[i], b = stars[j];
+            const dx = (a.x + a.px) - (b.x + b.px);
+            const dy = (a.y + a.py) - (b.y + b.py);
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < 48) {
+              ctx.beginPath();
+              ctx.moveTo(a.x + a.px, a.y + a.py + scrollY * 0.12);
+              ctx.lineTo(b.x + b.px, b.y + b.py + scrollY * 0.12);
+              ctx.lineWidth = 1.2 - dist/64;
+              ctx.stroke();
+            }
+          }
+        }
+        ctx.restore();
+      }
+      for (const s of stars) {
+        ctx.beginPath();
+        ctx.arc(s.x + s.px, s.y + s.py + scrollY * 0.12, s.r, 0, 2 * Math.PI);
+        ctx.fillStyle = `rgba(255,255,255,${s.o})`;
+        ctx.shadowColor = '#fff';
+        ctx.shadowBlur = 8;
+        ctx.fill();
+      }
+    }
+    function animateStars() {
+      for (let i = 0; i < stars.length; i++) {
+        const s = stars[i];
+        s.y += s.speed;
+        // Parallax: estrelas seguem o mouse
+        s.px += (mouseX - w/2) * s.r * 0.01 - s.px * 0.05;
+        s.py += (mouseY - h/2) * s.r * 0.01 - s.py * 0.05;
+        if (s.y > h) {
+          s.x = Math.random() * w;
+          s.y = 0;
+          s.px = 0;
+          s.py = 0;
+        }
+      }
+      // Efeito de "colagem" ao passar o mouse: estrelas próximas se atraem
+      if (mouseOver) {
+        for (let i = 0; i < stars.length; i++) {
+          for (let j = i+1; j < stars.length; j++) {
+            const a = stars[i], b = stars[j];
+            const dx = (a.x + a.px) - (b.x + b.px);
+            const dy = (a.y + a.py) - (b.y + b.py);
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < 32) {
+              // Aproxima as estrelas
+              const force = (32 - dist) * 0.04;
+              const fx = dx / dist * force;
+              const fy = dy / dist * force;
+              a.px -= fx * 0.5;
+              a.py -= fy * 0.5;
+              b.px += fx * 0.5;
+              b.py += fy * 0.5;
+            }
+          }
+        }
+      }
+      drawStars();
+      requestAnimationFrame(animateStars);
+    }
+    window.addEventListener('resize', resize);
+    window.addEventListener('mousemove', e => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      mouseOver = true;
+    });
+    window.addEventListener('mouseout', () => { mouseOver = false; });
+    // Remove parallax/descida dos cards e insere separadores animados
+    // Remove todos os separadores caso existam
+    window.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.fact-separator').forEach(e => e.remove());
+    });
+    resize();
+    animateStars();
+
+    // Efeito do botão NASA
+    const btn = document.querySelector('.nasa-btn');
+    const shine = btn.querySelector('.shine');
+    btn.addEventListener('mousemove', function(e) {
+      const rect = btn.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      shine.style.background = `radial-gradient(ellipse 90px 22px at ${x}px ${y}px, rgba(255,255,255,1) 40%, transparent 100%)`;
+    });
+    btn.addEventListener('mouseleave', function() {
+      shine.style.background = '';
+    });
+
+    // Modo claro/escuro
+    function toggleMode() {
+      document.body.classList.toggle('light');
+      const icon = document.querySelector('.toggle-mode i');
+      icon.className = document.body.classList.contains('light') ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    }
+
+    // Ícones e imagens para os fatos
+    const icons = [
+      'fa-sun', 'fa-clock', 'fa-jupiter', 'fa-galaxy', 'fa-star', 'fa-mountain', 'fa-moon', 'fa-cloud', 'fa-ruler', 'fa-arrow-up',
+      'fa-black-tie', 'fa-fire', 'fa-globe', 'fa-asterisk', 'fa-wind', 'fa-telescope', 'fa-arrows-to-dot', 'fa-hourglass', 'fa-comet', 'fa-sun',
+      'fa-cloud', 'fa-moon', 'fa-temperature-low', 'fa-camera', 'fa-hourglass-half', 'fa-water', 'fa-meteor', 'fa-satellite', 'fa-comet', 'fa-galaxy',
+      'fa-rotate', 'fa-supernova', 'fa-venus', 'fa-moon', 'fa-satellite', 'fa-galaxy', 'fa-neptune', 'fa-female', 'fa-mars', 'fa-star',
+      'fa-telescope', 'fa-moon', 'fa-hat-wizard', 'fa-uranus', 'fa-eye', 'fa-flask', 'fa-camera', 'fa-star', 'fa-meteor', 'fa-asterisk'
+    ];
+    const images = [
+      'https://upload.wikimedia.org/wikipedia/commons/4/4c/Sun_white.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/9/99/Solar_Spectrum.png',
+      'https://upload.wikimedia.org/wikipedia/commons/e/e2/Jupiter_by_Cassini-Huygens.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/6/6a/Milky_Way_Galaxy.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/5/5a/Proxima_Centauri_by_ESO.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/8/88/Olympus_Mons_Mars.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/c/c7/Saturn_during_Equinox.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/3/3d/Orion_Nebula_-_Hubble_2006_mosaic_18000.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/6/6f/Observable_universe_logarithmic_illustration.png',
+      'https://upload.wikimedia.org/wikipedia/commons/9/9e/Full_Moon_Luc_Viatour.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/2/2e/Black_hole_-_Messier_87_crop_max_res.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/e/e5/Venus-real_color.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/6/6f/Ceres_-_RC3_-_20150419.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/5/5a/Great_Red_Spot_from_Voyager_1.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/3/3f/HST-SM4.jpeg',
+      'https://upload.wikimedia.org/wikipedia/commons/5/5f/Andromeda_Galaxy_%28with_h-alpha%29.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/8/85/Venus_day_length.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/2/2b/Halley%27s_Comet_-_1986.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/4/4c/Sun_white.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/6/6b/Titan_in_true_color.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/7/7e/Ganymede_g1_true-edit1.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/6/6e/Interstellar_Space.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/4/4e/Black_hole_first_image.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/7/7a/Universe_age.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/2/2b/Hydra_constellation_map.png',
+      'https://upload.wikimedia.org/wikipedia/commons/2/2a/Pluto_and_charon_in_true_color.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/6/6e/ISS-38_Soyuz_TMA-11M_undocking.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/7/7e/Comet_Bernardinelli-Bernstein.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/6/6a/Milky_Way_Galaxy.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/2/2c/Solar_System_orbit.gif',
+      'https://upload.wikimedia.org/wikipedia/commons/0/0c/Crab_Nebula.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/4/4a/Mercury_in_true_color.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/9/9e/Full_Moon_Luc_Viatour.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/6/6e/ISS-38_Soyuz_TMA-11M_undocking.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/6/6a/Milky_Way_Galaxy.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/5/56/Neptune_Full.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/7/7a/Valentina_Tereshkova_1963.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/0/02/Mars_South_Pole.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/5/5c/Betelgeuse_star.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/4/4e/JWST_first_images.png',
+      'https://upload.wikimedia.org/wikipedia/commons/c/c7/Saturn_during_Equinox.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/7/7e/Sombrero_Galaxy.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/3/3d/Uranus2.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/7/7e/Cat%27s_Eye_Nebula.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/4/4c/Sun_white.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/6/6e/Earth_from_V-2.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/5/5a/Sirius_A_and_B_Hubble_photo.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/7/7e/Chicxulub_impact.jpg'
+    ];
+    // 50 fatos sobre astronomia
+    const factsArr = [
+      "O Sol representa mais de 99% da massa do Sistema Solar.",
+      "A luz do Sol leva cerca de 8 minutos e 20 segundos para chegar à Terra.",
+      "Júpiter é o maior planeta do Sistema Solar.",
+      "A Via Láctea tem cerca de 100 a 400 bilhões de estrelas.",
+      "A estrela mais próxima da Terra, além do Sol, é Proxima Centauri.",
+      "O maior vulcão do Sistema Solar é o Olympus Mons, em Marte.",
+      "Saturno tem mais de 80 luas conhecidas.",
+      "A Nebulosa de Órion está a cerca de 1.344 anos-luz da Terra.",
+      "O universo observável tem cerca de 93 bilhões de anos-luz de diâmetro.",
+      "A Lua se afasta da Terra cerca de 3,8 cm por ano.",
+      "O buraco negro mais próximo da Terra está a cerca de 1.500 anos-luz.",
+      "O planeta mais quente do Sistema Solar é Vênus.",
+      "A Terra é o único planeta conhecido com placas tectônicas ativas.",
+      "O maior asteroide do cinturão principal é Ceres.",
+      "A Grande Mancha Vermelha de Júpiter é uma tempestade gigante.",
+      "O telescópio Hubble foi lançado em 1990.",
+      "A galáxia Andrômeda está se aproximando da Via Láctea.",
+      "O dia em Vênus é mais longo que seu ano.",
+      "O cometa Halley retorna a cada 76 anos, em média.",
+      "O Sol é uma estrela de classe espectral G2V.",
+      "A atmosfera de Titã, lua de Saturno, é mais densa que a da Terra.",
+      "O maior satélite natural do Sistema Solar é Ganimedes, de Júpiter.",
+      "A temperatura média do espaço interestelar é de cerca de -270°C.",
+      "A primeira foto de um buraco negro foi divulgada em 2019.",
+      "O universo tem cerca de 13,8 bilhões de anos.",
+      "A constelação mais extensa é a Hidra.",
+      "O planeta anão Plutão tem cinco luas conhecidas.",
+      "A Estação Espacial Internacional orbita a Terra a cada 90 minutos.",
+      "O maior cometa já observado é o Bernardinelli-Bernstein.",
+      "A galáxia mais distante já observada está a mais de 13 bilhões de anos-luz.",
+      "O Sol gira em torno do centro da Via Láctea a cada 225 milhões de anos.",
+      "A Nebulosa do Caranguejo é o remanescente de uma supernova observada em 1054.",
+      "O planeta Mercúrio não tem atmosfera significativa.",
+      "A Lua cheia ocorre a cada 29,5 dias.",
+      "O maior satélite artificial é a Estação Espacial Internacional.",
+      "A galáxia de Andrômeda contém cerca de 1 trilhão de estrelas.",
+      "O planeta Netuno foi descoberto em 1846.",
+      "A primeira mulher no espaço foi Valentina Tereshkova, em 1963.",
+      "O maior deserto do Sistema Solar é o Polo Sul de Marte.",
+      "A estrela Betelgeuse pode explodir como supernova nos próximos 100 mil anos.",
+      "O telescópio James Webb foi lançado em 2021.",
+      "A maior lua de Saturno é Titã.",
+      "A galáxia do Sombrero tem um formato peculiar de chapéu.",
+      "O planeta Urano gira de lado em relação ao seu plano orbital.",
+      "A Nebulosa do Olho de Gato é uma das mais complexas já observadas.",
+      "O Sol é composto principalmente de hidrogênio e hélio.",
+      "A primeira imagem da Terra do espaço foi tirada em 1946.",
+      "A estrela Sirius é a mais brilhante do céu noturno.",
+      "O maior impacto de meteoro registrado foi o de Chicxulub, há 66 milhões de anos."
+    ];
+    const factsDiv = document.getElementById('facts');
+    factsArr.forEach((fact, i) => {
+      const div = document.createElement('div');
+      div.className = 'fact';
+      div.id = `fact${i+1}`;
+      // Imagem sempre visível, fallback para ícone se imagem não carregar
+      const imgUrl = images[i%images.length];
+      div.innerHTML = `
+        <img class='img' src='${imgUrl}' alt='Imagem astronomia' onerror="this.style.display='none';this.parentNode.querySelector('.icon').style.display='inline-block';">
+        <span class='icon' style='display:none;'><i class='fa-solid ${icons[i%icons.length]}'></i></span>
+        <span><strong>${i+1}.</strong> ${fact}</span>
+      `;
+      factsDiv.appendChild(div);
+    });
+
+    // Busca e rolagem
+    function searchFact() {
+      const input = document.getElementById('searchInput').value.toLowerCase();
+      const facts = document.querySelectorAll('.fact');
+      let found = false;
+      facts.forEach(f => f.classList.remove('highlight'));
+      for (let i = 0; i < facts.length; i++) {
+        if (facts[i].textContent.toLowerCase().includes(input)) {
+          facts[i].classList.add('highlight');
+          facts[i].scrollIntoView({behavior: 'smooth', block: 'center'});
+          found = true;
+          break;
+        }
+      }
+      if (!found && input.trim() !== '') {
+        alert('Nenhuma curiosidade encontrada!');
+      }
+    }
+    // Enter ativa busca
+    document.getElementById('searchInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') searchFact();
+    });
+
+    // Sons suaves ao interagir
+    const audio = document.getElementById('audio-hover');
+    setTimeout(() => {
+      document.querySelectorAll('.fact').forEach(fact => {
+        fact.addEventListener('mouseenter', () => {
+          audio.currentTime = 0;
+          audio.play();
+        });
+      });
+    }, 500);
+  </script>
+</body>
+</html>
